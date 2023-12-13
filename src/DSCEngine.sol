@@ -23,9 +23,12 @@
 // private
 // view & pure functions
 
-pragma solidity ^0.8.18;
+pragma solidity 0.8.19;
 
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 
 /**
  * @title DSCEngine
@@ -46,15 +49,25 @@ import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 
 
 
-contract DSCEngine {
+contract DSCEngine is ReentrancyGuard {
     // Errors //
     error DSCEngine__NeedsMoreThanZero();
     error DSCEngine__TokenAddressAndPriceFeedAddressLengthMismatch();
+    error DSCEngine__NotAllowedToken();
+    error DSCEngine__TransferFailed();
+
 
     // State Variables //
     mapping(address token => address priceFeed) private s_priceFeeds; //token to prcie feed mapping
+    mapping(adress user => mapping(address token => uint256 amount)) 
+            private s_collateralDeposited; // user to token to amount mapping
+
 
     DecentralizedStableCoin private immutable i_dsc;
+
+    // Events //
+    event CollateralDepositied(address indexed user, address indexed token, uint256 indexed amount);
+
 
     // Modifiers //
     modifier moreThanZero(uint256 amount) {
@@ -64,7 +77,13 @@ contract DSCEngine {
         _;
     }
 
-    //modifier isAllowedToken(address token){_;}
+    modifier isAllowedToken(address token){
+        if(s_priceFeeds[token] == address(0)){
+            revert DSCEngine__NotAllowedToken();
+        
+        
+        _;}
+    }
 
     // Functions //
     constructor(
@@ -89,6 +108,7 @@ contract DSCEngine {
     function depositCollateralAndMintDsc() external payable{}
 
     /**
+     * @notice follows CEI pattern (Check, Effects, Interactions)
      * @param tokenCollateralAddress The address of the token to be deposited as collateral
      * @param amountCollateral The amount of collateral to deposit     * 
      */
@@ -96,9 +116,18 @@ contract DSCEngine {
     function depoistCollarteral(
         address tokenCollateralAddress, 
         uint256 amountCollateral
-    ) external moreThanZero(amountCollateral) {
-
-
+    ) 
+        external 
+        moreThanZero(amountCollateral) 
+        isAllowedToken(tokenCollateralAddress)
+        nonReentrant
+    {
+        s_collateralDeposited[msg.sender][tokenCollateralAddress] += amountCollateral; 
+        emit CollateralDepositied(msg.sender, tokenCollateralAddress, amountCollateral);
+        IERC20(tokenCollateralAddress).transferFrom(msg.sender, address(this), amountCollateral);
+        if (!success){
+            revert DSCEngine__TransferFailed();        
+        }
 
     }
 
