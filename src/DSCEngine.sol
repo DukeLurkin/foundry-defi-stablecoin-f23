@@ -198,15 +198,17 @@ contract DSCEngine is ReentrancyGuard {
     // Public and External View Fuctions //
     ///\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    function getAccountCollateralValue(address user) public view returns (uint256){
+    function getAccountCollateralValue(address user) public view returns (uint256 totalCollateralValueInUsd){
         // To get the total value of all collateral we need to:
             //1. loop through each collateral token
             //2. get the amount deposited
             //3. Map the token to the price feed
-        for(uint256 i = 0; i<s_collateralTokens.length; i++)
+        for(uint256 i = 0; i<s_collateralTokens.length; i++){
             address token = s_collateralTokens[i];
             uint256 amount = s_collateralDeposited[user][token];
-            totalCollateralValueInUsd +=
+            totalCollateralValueInUsd += getUsdValue(token, amount);
+        }
+        return totalCollateralValueInUsd;
 
     }
 
