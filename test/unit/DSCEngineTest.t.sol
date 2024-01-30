@@ -10,9 +10,9 @@ import {HelperConfig} from "../../script/HelperConfig.s.sol";
 
 contract DSCEngineTest is Test {
     DeployDSC deployer;
-    DecentralizedStableCoin dsc;
-    DSCEngine dsce;//dsc engine
-    HelperConfig config;
+    DecentralizedStableCoin public dsc;
+    DSCEngine public dsce;//dsc engine
+    HelperConfig public config;
     address ethUsdPriceFee;
     address weth;
 
