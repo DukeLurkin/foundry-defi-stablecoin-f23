@@ -25,6 +25,7 @@
 
 pragma solidity ^0.8.20;
 
+import {Test, console2} from "forge-std/Test.sol";
 import {DecentralizedStableCoin} from "./DecentralizedStableCoin.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -59,12 +60,15 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__MintFailed();
     error DSCEngine__HealthFactorOK();
     error DSCEngine__HealthFactorNotImproved();
+    error DSCEngine__NotEnoughCollateralToRedeem();
+
 
     /// \\\\\\\\\\\\\\\\\
     // State Variables //
     /// \\\\\\\\\\\\\\\\\
+    uint256 private constant LIQUIDATION_PRECISION = 100;
     uint256 private constant ADDITONAL_FEED_PRECISION = 1e10; // 10 decimals
-    uint256 private constant PRECISION = 1e18; // 10 decimals
+    uint256 private constant PRECISION = 1e18; // 18 decimals
     uint256 private constant LIQUIDATION_THRESHOLD = 50; // must be at least 200% overcollateralized
     uint256 private constant LIQUDATION_PRECISION = 100;
     uint256 private constant MIN_HEALTH_FACTOR = 1e18;
@@ -193,6 +197,8 @@ contract DSCEngine is ReentrancyGuard {
     */
     function redeemCollateralForDsc(address tokenCollateralAddress, uint256 amountCollateral, uint256 amountDscToBurn)
         external 
+        moreThanZero(amountCollateral)
+        isAllowedToken(tokenCollateralAddress)
     {
         burnDsc(amountDscToBurn);
         redeemCollateral(tokenCollateralAddress, amountCollateral);
@@ -319,6 +325,8 @@ contract DSCEngine is ReentrancyGuard {
         if (!success) {
             revert DSCEngine__TransferFailed();
         }
+        if (s_collateralDeposited[from][tokenCollateralAddress] == 0 || s_collateralDeposited[from][tokenCollateralAddress] < amountCollateral)
+            revert DSCEngine__NotEnoughCollateralToRedeem();
     }
 
     function _getAccountInformation(
@@ -347,6 +355,16 @@ contract DSCEngine is ReentrancyGuard {
         return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
 
+    function _calculateHealthFactor(uint256 totalDscMinted, uint256 collateralValueInUsd)
+        internal
+        pure
+        returns (uint256)
+    {
+        if (totalDscMinted == 0) return type(uint256).max;
+        uint256 collateralAdjustedForThreshold = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+        return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
+    }
+
     function _revertIfHealthFactorIsBroken(address user) internal view {
         //1. check health factor (do they have enough collateral?)
         //2. if not, revert
@@ -363,10 +381,13 @@ contract DSCEngine is ReentrancyGuard {
         //price of ETH (token)
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
         (, int256 price, , , ) = priceFeed.latestRoundData();
+        console2.log("usdAmountInWei: ", usdAmountInWei);
+        console2.log("price: ", price);
         // ($10e18 * 1e18) / ($2000e8 * 1e10)
-        return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITONAL_FEED_PRECISION); 
+        return ((usdAmountInWei * PRECISION) / (uint256(price) * ADDITONAL_FEED_PRECISION));
+        
     }
-
+        
 
     function getAccountCollateralValue(
         address user
@@ -406,5 +427,5 @@ contract DSCEngine is ReentrancyGuard {
         (totalDscMinted, collateralValueInUsd) = _getAccountInformation(user);
     }
 
-
+    
 }

@@ -8,6 +8,7 @@ import {Test, console2} from "forge-std/Test.sol";
 import {DSCEngine} from "../../src/DSCEngine.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/ERC20Mock.sol";
+//import {getTokenAmountFromUsd} from "../../src/DSCEngine.sol";
 
 contract DSCEngineTest is Test {
     DeployDSC deployer;
@@ -98,7 +99,7 @@ contract DSCEngineTest is Test {
     _ ;
     }
 
-    function testCanDepositCollateralAndGetAccountInfo() public depositedCollateral {
+    /*function testCanDepositCollateralAndGetAccountInfo() public depositedCollateral {
         (uint256 totalDscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(USER);
 
         //uint256 expectedTotalDscMinted = 0;
@@ -107,6 +108,24 @@ contract DSCEngineTest is Test {
         assertEq(expectedDepositAmount, AMOUNT_COLLATERAL);
 
     }
+    */
+
+
+       function testCanDepositedCollateralAndGetAccountInfo() public depositedCollateral {
+        (uint256 totalDscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(USER);
+        uint256 expectedDepositedAmount = dsce.getTokenAmountFromUsd(weth, collateralValueInUsd);
+        assertEq(totalDscMinted, 0);
+        assertEq(expectedDepositedAmount, AMOUNT_COLLATERAL);
+        console2.log("collateral Value in USD: ", collateralValueInUsd);
+        console2.log("expected Deposited Amount: ", expectedDepositedAmount);
+        // console2.log("usdAmountInWei: ", usdAmountInWei);
+        // console2.log("price: ", price);
+    }
+
+
+
+
+
 
 
 
