@@ -99,31 +99,16 @@ contract DSCEngineTest is Test {
     _ ;
     }
 
-    /*function testCanDepositCollateralAndGetAccountInfo() public depositedCollateral {
+    function testCanDepositCollateralAndGetAccountInfo() public depositedCollateral {
         (uint256 totalDscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(USER);
 
-        //uint256 expectedTotalDscMinted = 0;
+        uint256 expectedTotalDscMinted = 0;
         uint256 expectedDepositAmount = dsce.getTokenAmountFromUsd(weth, collateralValueInUsd);
-        assertEq(totalDscMinted, 0);
-        assertEq(expectedDepositAmount, AMOUNT_COLLATERAL);
+        assertEq(totalDscMinted, expectedTotalDscMinted);
+        assertEq(AMOUNT_COLLATERAL, expectedDepositAmount);
 
     }
-    */
-
-
-       function testCanDepositedCollateralAndGetAccountInfo() public depositedCollateral {
-        (uint256 totalDscMinted, uint256 collateralValueInUsd) = dsce.getAccountInformation(USER);
-        uint256 expectedDepositedAmount = dsce.getTokenAmountFromUsd(weth, collateralValueInUsd);
-        assertEq(totalDscMinted, 0);
-        assertEq(expectedDepositedAmount, AMOUNT_COLLATERAL);
-        console2.log("collateral Value in USD: ", collateralValueInUsd);
-        console2.log("expected Deposited Amount: ", expectedDepositedAmount);
-        // console2.log("usdAmountInWei: ", usdAmountInWei);
-        // console2.log("price: ", price);
-    }
-
-
-
+    
 
 
 

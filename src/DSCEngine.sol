@@ -352,6 +352,9 @@ contract DSCEngine is ReentrancyGuard {
         ) = _getAccountInformation(user);
         uint256 collateralAdjustedForThreshold = (collateralValueInUsd *
             LIQUIDATION_THRESHOLD) / LIQUDATION_PRECISION;
+        //added if statement to prevent division by 0 (help from github forum)
+        if(totalDscMinted == 0) return type(uint256).max;
+        //
         return (collateralAdjustedForThreshold * PRECISION) / totalDscMinted;
     }
 
